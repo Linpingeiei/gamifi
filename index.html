@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบสะสมแต้ม ✨</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Mitr', sans-serif;
+            background-color: #f0f4f8; /* Soft Blue/Gray */
+        }
+        .soft-bg-1 { background-color: #e6f3ff; } /* Soft Blue */
+        .soft-bg-2 { background-color: #e0f8f0; } /* Soft Green */
+        .soft-bg-3 { background-color: #fff9e6; } /* Soft Yellow */
+        .soft-bg-4 { background-color: #fde2e4; } /* Soft Pink */
+        .tab-active {
+            background-color: #4a90e2; /* Brighter Blue for active tab */
+            color: white;
+        }
+        .btn-primary {
+            background-color: #4a90e2;
+            color: white;
+            transition: background-color 0.3s;
+        }
+        .btn-primary:hover {
+            background-color: #357abd;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+            -webkit-animation: fadeIn 0.3s;
+            animation: fadeIn 0.3s;
+        }
+        .modal-content {
+            -webkit-animation: slideIn 0.3s;
+            animation: slideIn 0.3s;
+        }
+        @-webkit-keyframes fadeIn { from {opacity: 0} to {opacity: 1} }
+        @keyframes fadeIn { from {opacity: 0} to {opacity: 1} }
+        @-webkit-keyframes slideIn { from {transform: translateY(-50px)} to {transform: translateY(0)} }
+        @keyframes slideIn { from {transform: translateY(-50px)} to {transform: translateY(0)} }
+    </style>
+     <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body class="antialiased">
+
+    <!-- Login Page -->
+    <div id="login-page" class="min-h-screen flex items-center justify-center soft-bg-1 px-4">
+        <div class="bg-white p-8 rounded-2xl shadow-lg w-full max-w-sm text-center">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">👨‍🏫 เข้าสู่ระบบผู้ดูแล</h1>
+            <p class="text-gray-500 mb-6">กรุณาใส่รหัสผ่านเพื่อจัดการข้อมูล</p>
+            <form id="login-form">
+                <input type="password" id="password" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 mb-4" placeholder="รหัสผ่าน">
+                <button type="submit" class="w-full btn-primary font-bold py-3 rounded-lg shadow-md">เข้าสู่ระบบ</button>
+            </form>
+            <button id="view-dashboard-btn" class="mt-4 text-blue-600 hover:underline">ไปยังหน้าแสดงผลคะแนน</button>
+        </div>
+    </div>
+
+    <!-- Dashboard Page -->
+    <div id="dashboard-page" class="hidden">
+        <header class="bg-white shadow-md p-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-gray-800">✨ สะสมแต้ม✨</h1>
+            <div>
+                <button id="goto-redeem-btn-from-dash" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg shadow-md mr-2"><i class="fas fa-gift mr-2"></i>แลกของรางวัล</button>
+                <button id="goto-admin-btn-from-dash" class="btn-primary px-4 py-2 rounded-lg font-semibold"><i class="fas fa-user-shield mr-2"></i>สำหรับผู้ดูแล</button>
+            </div>
+        </header>
+        <main class="p-4 md:p-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                <div id="leaderboard-container" class="lg:col-span-1"></div>
+                <div id="point-criteria-display" class="lg:col-span-2"></div>
+            </div>
+
+            <div id="dashboard-tabs" class="flex flex-wrap border-b border-gray-200 mb-4"></div>
+            
+            <div class="bg-white p-4 rounded-xl shadow-md">
+                <table class="w-full text-left">
+                    <thead class="border-b-2 border-gray-200">
+                        <tr>
+                            <th class="p-3">เลขที่</th>
+                            <th class="p-3">ชื่อ - สกุล (ชื่อเล่น)</th>
+                            <th class="p-3 text-center">แต้มสะสม 🌟</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dashboard-student-list"></tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- Admin Page -->
+    <div id="admin-page" class="hidden">
+        <header class="bg-white shadow-md p-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-gray-800">🛠️ หน้าจัดการข้อมูล</h1>
+            <div>
+                 <button id="goto-redeem-btn-from-admin" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg shadow-md mr-2"><i class="fas fa-gift mr-2"></i>แลกของรางวัล</button>
+                 <button id="fetch-gsheet-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow-md mr-2"><i class="fas fa-cloud-download-alt mr-2"></i>ดึงข้อมูลจาก Google Sheet</button>
+                 <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow-md"><i class="fas fa-sign-out-alt mr-2"></i>ออกจากระบบ</button>
+            </div>
+        </header>
+        <main class="p-4 md:p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="soft-bg-2 p-6 rounded-2xl shadow-lg">
+                <h2 class="text-xl font-bold mb-4">รายชื่อนักเรียน</h2>
+                <div id="admin-tabs" class="flex flex-wrap border-b border-gray-200 mb-4"></div>
+                <div class="bg-white p-4 rounded-xl shadow-md">
+                    <table class="w-full text-left">
+                        <thead class="border-b-2 border-gray-200">
+                            <tr>
+                                <th class="p-3">เลขที่</th>
+                                <th class="p-3">ชื่อ - สกุล (ชื่อเล่น)</th>
+                                <th class="p-3 text-center">แต้ม 🌟</th>
+                                <th class="p-3 text-center">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-student-list"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="soft-bg-3 p-6 rounded-2xl shadow-lg">
+                <h2 class="text-xl font-bold mb-4">📝 เพิ่มรายชื่อนักเรียน</h2>
+                <form id="add-student-form">
+                    <div class="mb-4">
+                        <label for="new-student-room" class="block text-gray-700 font-semibold mb-2">เลือกห้อง</label>
+                        <select id="new-student-room" class="w-full p-3 border border-gray-300 rounded-lg" required></select>
+                    </div>
+                    <div class="mb-4">
+                        <label for="new-student-id" class="block text-gray-700 font-semibold mb-2">เลขที่</label>
+                        <input type="number" id="new-student-id" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="เช่น 1" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="new-student-name" class="block text-gray-700 font-semibold mb-2">ชื่อ - สกุล</label>
+                        <input type="text" id="new-student-name" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="เช่น เด็กชายสมศักดิ์ รักเรียน" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="new-student-nickname" class="block text-gray-700 font-semibold mb-2">ชื่อเล่น</label>
+                        <input type="text" id="new-student-nickname" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="เช่น ศักดิ์">
+                    </div>
+                    <button type="submit" class="w-full btn-primary font-bold py-3 rounded-lg shadow-md">เพิ่มนักเรียน</button>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <!-- Redeem Page -->
+    <div id="redeem-page" class="hidden">
+        <header class="bg-white shadow-md p-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-gray-800">🎁 แลกของรางวัล</h1>
+            <button id="back-from-redeem-btn" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg shadow-md"><i class="fas fa-arrow-left mr-2"></i>กลับ</button>
+        </header>
+        <main class="p-4 md:p-6">
+            <div class="soft-bg-4 p-6 rounded-2xl shadow-lg max-w-4xl mx-auto">
+                <h2 class="text-xl font-bold mb-4">เลือกนักเรียนและของรางวัล</h2>
+                <div class="mb-6">
+                    <label for="redeem-student-selector" class="block text-gray-700 font-semibold mb-2">เลือกนักเรียน</label>
+                    <select id="redeem-student-selector" class="w-full p-3 border border-gray-300 rounded-lg"></select>
+                </div>
+                <div id="rewards-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <!-- Rewards will be populated here -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="history-modal" class="modal">
+        <div class="modal-content bg-white w-11/12 md:w-1-2 lg:w-1-3 mx-auto mt-20 p-6 rounded-2xl shadow-lg">
+            <div class="flex justify-between items-center mb-4">
+                <h2 id="history-modal-title" class="text-2xl font-bold">ประวัติคะแนน</h2>
+                <button id="close-history-modal" class="text-2xl text-gray-500 hover:text-gray-800">&times;</button>
+            </div>
+            <div id="history-modal-body" class="max-h-96 overflow-y-auto"></div>
+        </div>
+    </div>
+    
+    <div id="manage-points-modal" class="modal">
+        <div class="modal-content bg-white w-11/12 md:w-1-2 lg:w-1-3 mx-auto mt-20 p-6 rounded-2xl shadow-lg">
+             <div class="flex justify-between items-center mb-4">
+                <h2 id="manage-modal-title" class="text-2xl font-bold">จัดการคะแนน</h2>
+                <button id="close-manage-modal" class="text-2xl text-gray-500 hover:text-gray-800">&times;</button>
+            </div>
+            <form id="manage-points-form">
+                 <input type="hidden" id="manage-student-key">
+                 <div class="mb-4">
+                    <label for="points-criteria" class="block text-gray-700 font-semibold mb-2">เกณฑ์การให้คะแนน</label>
+                    <select id="points-criteria" class="w-full p-3 border border-gray-300 rounded-lg"></select>
+                </div>
+                <div id="custom-reason-container" class="mb-4 hidden">
+                    <label for="points-reason" class="block text-gray-700 font-semibold mb-2">เหตุผล (กำหนดเอง)</label>
+                    <input type="text" id="points-reason" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="เช่น ทำกิจกรรมพิเศษ">
+                </div>
+                 <div class="mb-4">
+                    <label for="points-value" class="block text-gray-700 font-semibold mb-2">คะแนน (ใส่ค่าลบเพื่อลด)</label>
+                    <input type="number" id="points-value" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="เช่น 10 หรือ -5" required>
+                </div>
+                <button type="submit" class="w-full btn-primary font-bold py-3 rounded-lg shadow-md">บันทึกคะแนน</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby8xex4zJh-PHx2ovRQwz0YkQ0l3y2m4oUONSY87dh9W4t5Ma2vqzIf0H6asvnwduib/exec';
+            const LOCAL_STORAGE_KEY = 'studentScoreData';
+
+            const pointCriteria = [
+                { reason: 'ตอบคำถามถูกต้อง', points: 10 },
+                { reason: 'ส่งงานตรงเวลา', points: 5 },
+                { reason: 'มีส่วนร่วมในชั้นเรียน', points: 5 },
+                { reason: 'ช่วยเพื่อน', points: 3 },
+                { reason: 'มาสาย', points: -5 },
+                { reason: 'ส่งงานล่าช้า', points: -5 },
+                { reason: 'ลืมแบบฝึกหัด', points: -2 },
+                { reason: 'คุยในห้องเรียน', points: -3 }
+            ];
+
+            const rewards = [
+                { name: '🖊️ ปากกา', cost: 30 },
+                { name: '🧴 ลิควิด', cost: 40 },
+                { name: '📖 สมุด', cost: 60 },
+                { name: '🍬 ขนม', cost: 100 },
+                { name: '🥤 น้ำหวาน', cost: 100 },
+                { name: '🎉 การบ้านฟรี 1 ครั้ง', cost: 200 }
+            ];
+
+            const loginPage = document.getElementById('login-page');
+            const dashboardPage = document.getElementById('dashboard-page');
+            const adminPage = document.getElementById('admin-page');
+            const redeemPage = document.getElementById('redeem-page');
+
+            let studentData = {};
+            let activeTab = '';
+            let isAuthenticated = false;
+            let lastPage = dashboardPage; // To track where to go back to from redeem page
+
+            const saveData = () => {
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(studentData));
+            };
+
+            const loadData = () => {
+                const data = localStorage.getItem(LOCAL_STORAGE_KEY);
+                studentData = data ? JSON.parse(data) : {};
+                if (Object.keys(studentData).length > 0) {
+                    activeTab = studentData['ป.4/2'] ? 'ป.4/2' : Object.keys(studentData)[0];
+                }
+            };
+            
+            const showPage = (page) => {
+                loginPage.classList.add('hidden');
+                dashboardPage.classList.add('hidden');
+                adminPage.classList.add('hidden');
+                redeemPage.classList.add('hidden');
+                page.classList.remove('hidden');
+                if (page === dashboardPage || page === adminPage) {
+                    lastPage = page;
+                }
+            };
+
+            const render = () => {
+                renderLeaderboard();
+                renderTabs('dashboard-tabs');
+                renderTabs('admin-tabs');
+                renderStudentList('dashboard-student-list', false);
+                renderStudentList('admin-student-list', true);
+                populateRoomSelector();
+                renderPointCriteria();
+                renderRedeemPage();
+            };
+
+            const renderLeaderboard = () => {
+                const container = document.getElementById('leaderboard-container');
+                if (!container) return;
+                let allStudents = [];
+                Object.keys(studentData).forEach(room => {
+                    studentData[room].forEach(student => {
+                        const totalPoints = student.history.reduce((sum, item) => sum + item.points, 0);
+                        allStudents.push({ ...student, roomName: room, totalPoints });
+                    });
+                });
+
+                const topStudents = allStudents.sort((a, b) => b.totalPoints - a.totalPoints).slice(0, 5);
+                let leaderboardHTML = `<div class="bg-white p-6 rounded-2xl shadow-lg h-full"><h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center"><i class="fas fa-trophy text-yellow-500 mr-3"></i> 5 อันดับคะแนนสูงสุด</h2><ol class="space-y-4">`;
+                if (topStudents.length === 0 || topStudents.every(s => s.totalPoints === 0)) {
+                    leaderboardHTML += `<li class="text-center text-gray-500 py-4">ยังไม่มีข้อมูลคะแนน</li>`;
+                } else {
+                    topStudents.forEach((student, index) => {
+                        const rankColors = ['text-yellow-400', 'text-gray-400', 'text-orange-400'];
+                        const icon = index < 3 ? `<i class="fas fa-medal ${rankColors[index]}"></i>` : `<span class="font-bold text-gray-500">${index + 1}</span>`;
+                        const nicknameDisplay = student.nickname ? `(${student.nickname})` : '';
+                        leaderboardHTML += `<li class="flex items-center"><div class="w-8 text-center text-2xl">${icon}</div><div class="ml-3 flex-grow"><p class="font-semibold text-gray-800">${student.name} ${nicknameDisplay}</p><p class="text-sm text-gray-500">ห้อง ${student.roomName}</p></div><div class="font-bold text-lg ${student.totalPoints >= 0 ? 'text-green-600' : 'text-red-600'}">${student.totalPoints}</div></li>`;
+                    });
+                }
+                leaderboardHTML += `</ol></div>`;
+                container.innerHTML = leaderboardHTML;
+            };
+
+            const renderPointCriteria = () => {
+                const container = document.getElementById('point-criteria-display');
+                if (!container) return;
+                const positiveCriteria = pointCriteria.filter(c => c.points > 0);
+                const negativeCriteria = pointCriteria.filter(c => c.points < 0);
+                container.innerHTML = `<div class="bg-white p-6 rounded-2xl shadow-lg h-full"><h2 class="text-xl font-bold text-gray-800 mb-4">📜 เกณฑ์การให้คะแนน</h2><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div><h3 class="font-semibold text-green-600 mb-2">✅ การเพิ่มแต้ม</h3><ul class="space-y-2">${positiveCriteria.map(c => `<li class="flex justify-between items-center text-gray-700"><span>${c.reason}</span><span class="font-bold text-green-600 bg-green-100 px-2 py-1 rounded-full text-sm">+${c.points}</span></li>`).join('')}</ul></div><div><h3 class="font-semibold text-red-600 mb-2">❌ การลดแต้ม</h3><ul class="space-y-2">${negativeCriteria.map(c => `<li class="flex justify-between items-center text-gray-700"><span>${c.reason}</span><span class="font-bold text-red-600 bg-red-100 px-2 py-1 rounded-full text-sm">${c.points}</span></li>`).join('')}</ul></div></div></div>`;
+            };
+
+            const renderTabs = (containerId) => {
+                const container = document.getElementById(containerId);
+                container.innerHTML = '';
+                Object.keys(studentData).sort().forEach(room => {
+                    const tab = document.createElement('button');
+                    tab.textContent = `ห้อง ${room}`;
+                    tab.className = `px-4 py-2 rounded-t-lg font-semibold mr-1 ${room === activeTab ? 'tab-active' : 'bg-gray-200 hover:bg-gray-300'}`;
+                    tab.onclick = () => { activeTab = room; render(); };
+                    container.appendChild(tab);
+                });
+            };
+
+            const renderStudentList = (containerId, isAdmin) => {
+                const container = document.getElementById(containerId);
+                container.innerHTML = '';
+                let studentsToRender = [];
+                if (studentData[activeTab]) {
+                    studentData[activeTab].forEach((student, index) => {
+                        studentsToRender.push({ ...student, key: `${activeTab}-${index}` });
+                    });
+                }
+                const sortedStudents = studentsToRender.sort((a, b) => a.id - b.id);
+                if (sortedStudents.length === 0) {
+                    const colSpan = isAdmin ? 4 : 3;
+                    container.innerHTML = `<tr><td colspan="${colSpan}" class="text-center p-6 text-gray-500">ไม่พบข้อมูลนักเรียน</td></tr>`;
+                    return;
+                }
+                sortedStudents.forEach((student) => {
+                    const totalPoints = student.history.reduce((sum, item) => sum + item.points, 0);
+                    const row = document.createElement('tr');
+                    row.className = 'border-b hover:bg-gray-100 cursor-pointer';
+                    const nicknameDisplay = student.nickname ? ` (${student.nickname})` : '';
+                    let adminButtons = '';
+                    if (isAdmin) {
+                        adminButtons = `<td class="p-3 text-center"><button data-key="${student.key}" class="manage-points-btn bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600">จัดการ</button></td>`;
+                    } else {
+                        row.dataset.key = student.key;
+                        row.classList.add('view-history-btn');
+                    }
+                    row.innerHTML = `<td class="p-3">${student.id}</td><td class="p-3 font-medium">${student.name}${nicknameDisplay}</td><td class="p-3 text-center font-bold text-lg ${totalPoints >= 0 ? 'text-green-600' : 'text-red-600'}">${totalPoints}</td>${adminButtons}`;
+                    container.appendChild(row);
+                });
+            };
+            
+            const populateRoomSelector = () => {
+                const selector = document.getElementById('new-student-room');
+                selector.innerHTML = '';
+                Object.keys(studentData).forEach(room => {
+                    const option = document.createElement('option');
+                    option.value = room;
+                    option.textContent = `ห้อง ${room}`;
+                    selector.appendChild(option);
+                });
+            };
+
+            const showHistoryModal = (studentKey) => {
+                const [room, index] = studentKey.split('-');
+                const student = studentData[room][index];
+                document.getElementById('history-modal-title').textContent = `ประวัติคะแนน: ${student.name}`;
+                const body = document.getElementById('history-modal-body');
+                body.innerHTML = '';
+                if (student.history.length === 0) {
+                    body.innerHTML = '<p class="text-center text-gray-500">ไม่มีประวัติคะแนน</p>';
+                } else {
+                    const list = document.createElement('ul');
+                    [...student.history].reverse().forEach(item => {
+                        const li = document.createElement('li');
+                        li.className = 'flex justify-between items-center border-b p-3';
+                        const pointsClass = item.points > 0 ? 'text-green-600' : 'text-red-600';
+                        li.innerHTML = `<div><p class="font-semibold">${item.reason}</p><p class="text-sm text-gray-500">${new Date(item.date).toLocaleString('th-TH')}</p></div><span class="font-bold text-lg ${pointsClass}">${item.points > 0 ? '+' : ''}${item.points}</span>`;
+                        list.appendChild(li);
+                    });
+                    body.appendChild(list);
+                }
+                document.getElementById('history-modal').style.display = 'flex';
+            };
+
+            const populateCriteriaSelector = () => {
+                const selector = document.getElementById('points-criteria');
+                selector.innerHTML = '<option value="">-- เลือกเกณฑ์ --</option>';
+                pointCriteria.forEach((item, index) => {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    option.textContent = `${item.reason} (${item.points > 0 ? '+' : ''}${item.points} คะแนน)`;
+                    selector.appendChild(option);
+                });
+                const otherOption = document.createElement('option');
+                otherOption.value = 'custom';
+                otherOption.textContent = 'อื่นๆ (กำหนดเอง)';
+                selector.appendChild(otherOption);
+            };
+
+            const showManagePointsModal = (studentKey) => {
+                const [room, index] = studentKey.split('-');
+                const student = studentData[room][index];
+                document.getElementById('manage-modal-title').textContent = `จัดการคะแนน: ${student.name}`;
+                document.getElementById('manage-student-key').value = studentKey;
+                document.getElementById('manage-points-form').reset();
+                document.getElementById('custom-reason-container').classList.add('hidden');
+                populateCriteriaSelector();
+                document.getElementById('manage-points-modal').style.display = 'flex';
+            };
+            
+            const renderRedeemPage = () => {
+                const studentSelector = document.getElementById('redeem-student-selector');
+                const rewardsContainer = document.getElementById('rewards-list');
+                const selectedStudentKey = studentSelector.value;
+                studentSelector.innerHTML = '<option value="">-- กรุณาเลือกนักเรียน --</option>';
+                rewardsContainer.innerHTML = '';
+                let allStudents = [];
+                Object.keys(studentData).forEach(room => {
+                    studentData[room].forEach((student, index) => {
+                        allStudents.push({ ...student, roomName: room, key: `${room}-${index}` });
+                    });
+                });
+                allStudents.sort((a,b) => a.name.localeCompare(b.name, 'th')).forEach(student => {
+                    const totalPoints = student.history.reduce((sum, item) => sum + item.points, 0);
+                    const option = document.createElement('option');
+                    option.value = student.key;
+                    option.textContent = `${student.name} (ห้อง ${student.roomName}) - ${totalPoints} แต้ม`;
+                    studentSelector.appendChild(option);
+                });
+                studentSelector.value = selectedStudentKey;
+
+                let studentPoints = -1;
+                if (selectedStudentKey) {
+                    const [room, index] = selectedStudentKey.split('-');
+                    const student = studentData[room][index];
+                    studentPoints = student.history.reduce((sum, item) => sum + item.points, 0);
+                }
+                
+                rewards.forEach(reward => {
+                    const canAfford = studentPoints >= reward.cost;
+                    const rewardEl = document.createElement('div');
+                    rewardEl.className = `bg-white p-4 rounded-lg shadow-md flex flex-col justify-between items-center text-center transition-opacity ${selectedStudentKey ? 'opacity-100' : 'opacity-50'}`;
+                    rewardEl.innerHTML = `
+                        <div class="text-3xl mb-2">${reward.name.split(' ')[0]}</div>
+                        <div>
+                            <p class="font-bold text-lg">${reward.name.split(' ').slice(1).join(' ')}</p>
+                            <p class="text-yellow-600 font-semibold">${reward.cost} แต้ม</p>
+                        </div>
+                        <button data-cost="${reward.cost}" data-name="${reward.name}" class="redeem-btn mt-3 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed w-full" ${!canAfford ? 'disabled' : ''}>แลกรางวัล</button>
+                    `;
+                    rewardsContainer.appendChild(rewardEl);
+                });
+            };
+            
+            window.handleSheetData = (data) => {
+                Swal.close();
+                let newStudentData = {};
+                for (const room in data) {
+                    if (!newStudentData[room]) newStudentData[room] = [];
+                    data[room].forEach(sheetStudent => {
+                        const existingStudent = studentData[room] ? studentData[room].find(s => s.id === sheetStudent.id) : null;
+                        if (existingStudent) {
+                             newStudentData[room].push({ ...existingStudent, name: sheetStudent.name, nickname: sheetStudent.nickname });
+                        } else {
+                             newStudentData[room].push({ id: sheetStudent.id, name: sheetStudent.name, nickname: sheetStudent.nickname, history: [] });
+                        }
+                    });
+                }
+                studentData = newStudentData;
+                if (!activeTab || !studentData[activeTab]) {
+                    activeTab = studentData['ป.4/2'] ? 'ป.4/2' : Object.keys(studentData)[0];
+                }
+                saveData();
+                render();
+                Swal.fire({ icon: 'success', title: 'ดึงข้อมูลสำเร็จ!', text: 'รายชื่อนักเรียนได้รับการอัปเดตแล้ว', timer: 1500, showConfirmButton: false });
+            };
+
+            const fetchFromGoogleSheet = () => {
+                if (SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_DEPLOYMENT_URL') {
+                    Swal.fire('ข้อผิดพลาด', 'กรุณาตั้งค่า URL ของ Google Apps Script ในโค้ดก่อน', 'error');
+                    return;
+                }
+                 Swal.fire({ title: 'กำลังดึงข้อมูล...', text: 'กรุณารอสักครู่', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+                const script = document.createElement('script');
+                script.src = `${SCRIPT_URL}?callback=handleSheetData&t=${new Date().getTime()}`;
+                document.body.appendChild(script);
+                script.onload = () => document.body.removeChild(script);
+                script.onerror = () => { Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อกับ Google Sheet ได้ โปรดตรวจสอบ URL และการตั้งค่า CORS', 'error'); }
+            };
+            
+            document.getElementById('login-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                if (document.getElementById('password').value === 'Chompoo24') {
+                    isAuthenticated = true;
+                    showPage(adminPage);
+                } else {
+                    Swal.fire('รหัสผ่านไม่ถูกต้อง', 'กรุณาลองใหม่อีกครั้ง', 'error');
+                }
+            });
+            
+            document.getElementById('view-dashboard-btn').addEventListener('click', () => showPage(dashboardPage));
+            document.getElementById('goto-admin-btn-from-dash').addEventListener('click', () => { isAuthenticated ? showPage(adminPage) : showPage(loginPage); });
+            document.getElementById('logout-btn').addEventListener('click', () => { isAuthenticated = false; document.getElementById('password').value = ''; showPage(loginPage); });
+            document.getElementById('fetch-gsheet-btn').addEventListener('click', fetchFromGoogleSheet);
+
+            document.getElementById('goto-redeem-btn-from-dash').addEventListener('click', () => showPage(redeemPage));
+            document.getElementById('goto-redeem-btn-from-admin').addEventListener('click', () => showPage(redeemPage));
+            document.getElementById('back-from-redeem-btn').addEventListener('click', () => showPage(lastPage));
+
+            document.getElementById('redeem-student-selector').addEventListener('change', renderRedeemPage);
+            
+            document.getElementById('rewards-list').addEventListener('click', (e) => {
+                if (e.target.classList.contains('redeem-btn')) {
+                    const studentKey = document.getElementById('redeem-student-selector').value;
+                    if (!studentKey) {
+                        Swal.fire('กรุณาเลือกนักเรียน', '', 'warning');
+                        return;
+                    }
+                    const rewardName = e.target.dataset.name;
+                    const rewardCost = parseInt(e.target.dataset.cost);
+                    const [room, index] = studentKey.split('-');
+                    const student = studentData[room][index];
+                    Swal.fire({
+                        title: `ยืนยันการแลกรางวัล?`,
+                        html: `<b>${student.name}</b> จะใช้ <b>${rewardCost}</b> แต้ม เพื่อแลก <b>${rewardName}</b>`,
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonColor: '#3085d6',
+                        cancelButtonColor: '#d33',
+                        confirmButtonText: 'ยืนยัน',
+                        cancelButtonText: 'ยกเลิก'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            studentData[room][index].history.push({ reason: `แลกรางวัล: ${rewardName}`, points: -rewardCost, date: new Date().toISOString() });
+                            saveData();
+                            render();
+                            Swal.fire('สำเร็จ!', 'แลกของรางวัลเรียบร้อยแล้ว', 'success');
+                        }
+                    })
+                }
+            });
+
+            document.getElementById('add-student-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const room = document.getElementById('new-student-room').value;
+                const id = parseInt(document.getElementById('new-student-id').value);
+                const name = document.getElementById('new-student-name').value;
+                const nickname = document.getElementById('new-student-nickname').value;
+                if (!room || !id || !name) { Swal.fire('ข้อมูลไม่ครบถ้วน', 'กรุณากรอกข้อมูลให้ครบ', 'warning'); return; }
+                if (!studentData[room]) studentData[room] = [];
+                if (studentData[room].some(s => s.id === id)) { Swal.fire('เลขที่ซ้ำ', `มีนักเรียนเลขที่ ${id} อยู่ในห้อง ${room} แล้ว`, 'error'); return; }
+                studentData[room].push({ id, name, nickname, history: [] });
+                saveData();
+                render();
+                e.target.reset();
+                 Swal.fire('สำเร็จ', 'เพิ่มนักเรียนเรียบร้อยแล้ว', 'success');
+            });
+            
+            document.getElementById('close-history-modal').onclick = () => document.getElementById('history-modal').style.display = 'none';
+            document.getElementById('close-manage-modal').onclick = () => document.getElementById('manage-points-modal').style.display = 'none';
+            
+            document.body.addEventListener('click', (e) => {
+                const historyBtn = e.target.closest('.view-history-btn');
+                if (historyBtn) showHistoryModal(historyBtn.dataset.key);
+                const manageBtn = e.target.closest('.manage-points-btn');
+                if (manageBtn) showManagePointsModal(manageBtn.dataset.key);
+            });
+
+            document.getElementById('points-criteria').addEventListener('change', (e) => {
+                const customReasonContainer = document.getElementById('custom-reason-container');
+                const pointsValueInput = document.getElementById('points-value');
+                const selectedValue = e.target.value;
+                if (selectedValue === 'custom') {
+                    customReasonContainer.classList.remove('hidden');
+                    pointsValueInput.value = '';
+                    pointsValueInput.readOnly = false;
+                } else if (selectedValue !== '') {
+                    customReasonContainer.classList.add('hidden');
+                    const selectedCriterion = pointCriteria[parseInt(selectedValue)];
+                    pointsValueInput.value = selectedCriterion.points;
+                    pointsValueInput.readOnly = true;
+                } else {
+                    customReasonContainer.classList.add('hidden');
+                    pointsValueInput.value = '';
+                     pointsValueInput.readOnly = false;
+                }
+            });
+
+            document.getElementById('manage-points-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const studentKey = document.getElementById('manage-student-key').value;
+                const criteriaIndex = document.getElementById('points-criteria').value;
+                const points = parseInt(document.getElementById('points-value').value);
+                let reason = '';
+                if (criteriaIndex === 'custom') {
+                    reason = document.getElementById('points-reason').value;
+                } else if (criteriaIndex !== '') {
+                    reason = pointCriteria[parseInt(criteriaIndex)].reason;
+                }
+                if (!reason || isNaN(points)) { Swal.fire('ข้อมูลไม่ถูกต้อง', 'กรุณาเลือกเกณฑ์ หรือกรอกเหตุผลและคะแนนให้ถูกต้อง', 'warning'); return; }
+                const [room, index] = studentKey.split('-');
+                studentData[room][index].history.push({ reason, points, date: new Date().toISOString() });
+                saveData();
+                render();
+                document.getElementById('manage-points-modal').style.display = 'none';
+                Swal.fire({ icon: 'success', title: 'บันทึกคะแนนสำเร็จ!', timer: 1500, showConfirmButton: false });
+            });
+
+            loadData();
+            if (Object.keys(studentData).length > 0) {
+                 showPage(dashboardPage);
+            } else {
+                 showPage(loginPage);
+            }
+            render();
+        });
+    </script>
+</body>
+</html>
+
